@@ -1,15 +1,20 @@
 package com.presisco.clicktabslayout;
 
+import android.content.Intent;
 import android.graphics.Color;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
     ClickTabsFramework mFramework;
@@ -28,21 +33,54 @@ public class MainActivity extends AppCompatActivity {
 
         prepareContentPages();
         defaultTabColor = Color.TRANSPARENT;
+        prepareFramework();
+    }
 
-        mFramework = new ClickTabsFramework();
-        mFramework.setContentItems(getContentFragments());
-        mFramework.setDistributeEvenly(even_tabs);
-        mFramework.setTabLayout(R.layout.click_tabs_item);
-        mFramework.setCustomTabDraw(new CustomTabDraw());
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater mi = getMenuInflater();
+        mi.inflate(R.menu.main_actionbar_menu, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
 
-        FragmentTransaction trans = getSupportFragmentManager().beginTransaction();
-        trans.replace(R.id.click_tabs_layout_frame, mFramework);
-        trans.commit();
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_settings:
+                Intent intent = new Intent(this, SettingActivity.class);
+                intent.putExtra("tabs_count", page_count);
+                intent.putExtra("is_even", even_tabs);
+                startActivityForResult(intent, 100);
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 100) {
+            if (resultCode == 0) {
+                page_count = data.getIntExtra("tabs_count", 4);
+                even_tabs = data.getBooleanExtra("is_even", true);
+                mContentPages.clear();
+                prepareContentPages();
+                prepareFramework();
+            }
+        }
     }
 
     private void prepareContentPages() {
+        Random random = new Random();
         for (int i = 0; i < page_count; ++i) {
-            String title = "Page" + i;
+            String title = "Page";
+            if (!even_tabs) {
+                int length = random.nextInt(6);
+                for (int j = 0; j < length; ++j) {
+                    title += " ";
+                }
+            }
+            title += i;
             int color = colorGen.getRandomColor();
             mContentPages.add(new ContentPage(title,
                     color,
@@ -56,6 +94,18 @@ public class MainActivity extends AppCompatActivity {
             list.add(item.getFragment());
         }
         return list;
+    }
+
+    private void prepareFramework() {
+        mFramework = new ClickTabsFramework();
+        mFramework.setContentItems(getContentFragments());
+        mFramework.setDistributeEvenly(even_tabs);
+        mFramework.setTabLayout(R.layout.click_tabs_item);
+        mFramework.setCustomTabDraw(new CustomTabDraw());
+
+        FragmentTransaction trans = getSupportFragmentManager().beginTransaction();
+        trans.replace(R.id.click_tabs_layout_frame, mFramework);
+        trans.commit();
     }
 
     static class ContentPage {
@@ -97,4 +147,6 @@ public class MainActivity extends AppCompatActivity {
             now.setBackgroundColor(mContentPages.get(pos).getPickedColor());
         }
     }
+
+
 }
